@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "20222141120",
+    "project_id": "gestentreprise-66a68",
+    "storage_bucket": "gestentreprise-66a68.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:20222141120:android:50a2e5f4c84b265e100325",
+        "android_client_info": {
+          "package_name": "ci.nassuagroupe.supmag"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLqU700K21vZGAXmw-ppdVe2CjyzPy2AM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
