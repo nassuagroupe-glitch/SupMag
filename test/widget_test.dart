@@ -29,6 +29,25 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// Enters [value] into the TextFormField whose InputDecoration.labelText is
+/// [label] (found via its rendered label as an ancestor).
+Future<void> _enterField(WidgetTester tester, String label, String value) async {
+  final field = find.ancestor(of: find.text(label), matching: find.byType(TextFormField)).first;
+  await tester.enterText(field, value);
+  await tester.pumpAndSettle();
+}
+
+/// Opens the DropdownButtonFormField labelled [label] and taps the menu
+/// item reading [optionText].
+Future<void> _selectDropdown(WidgetTester tester, String label, String optionText) async {
+  final field = find.ancestor(
+    of: find.text(label),
+    matching: find.byWidgetPredicate((w) => w.runtimeType.toString().startsWith('DropdownButtonFormField')),
+  );
+  await _tap(tester, field.first);
+  await _tap(tester, find.text(optionText).last);
+}
+
 /// Dismisses the login gate via one of its "Travailler hors ligne" shortcuts,
 /// landing straight on the desktop/mobile shell like the rest of these tests
 /// expect.
@@ -173,6 +192,61 @@ void main() {
 
     await _tap(tester, find.text('Annuler'));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('SupMag desktop: new product captures supplier, depot, and packaging fields', (WidgetTester tester) async {
+    _useDesktopWindow(tester);
+    await tester.pumpWidget(const SupMagApp());
+    await tester.pumpAndSettle();
+    await _loginOffline(tester);
+
+    await _tap(tester, find.text('Produits & prix').first);
+    await _tap(tester, find.text('Nouveau produit'));
+
+    await _enterField(tester, 'Nom du produit', 'Yaourt Test 500g');
+    await _enterField(tester, 'Code-barres (scanner USB ou saisie)', '6009900112233');
+
+    await _selectDropdown(tester, 'Catégorie', '+ Nouvelle catégorie…');
+    await _enterField(tester, 'Nom de la nouvelle catégorie', 'Laitages');
+
+    await _selectDropdown(tester, 'Fournisseur', 'Awa Boissons');
+    await _selectDropdown(tester, 'Dépôt', 'Cocody Angré');
+
+    await _enterField(tester, 'Prix vente au détail (FCFA)', '500');
+    await _enterField(tester, 'Prix achat (FCFA)', '350');
+    await _enterField(tester, 'Stock initial', '25');
+    await _enterField(tester, 'Seuil minimum', '10');
+    await _enterField(tester, 'Emplacement en magasin (ex: Allée 3, Étagère B)', 'Allée 5, Étagère A');
+    await _enterField(tester, 'Poids (kg, optionnel)', '0.5');
+    await _enterField(tester, 'Unités par paquet (optionnel)', '12');
+    await _enterField(tester, 'Prix du paquet (FCFA)', '5500');
+    await _enterField(tester, 'Unités par carton (optionnel)', '6');
+    await _enterField(tester, 'Prix du carton (FCFA)', '31000');
+
+    await _tap(tester, find.text('Créer'));
+    expect(tester.takeException(), isNull);
+
+    // Back on the product list — the new row and its category/supplier-
+    // derived values should be visible.
+    expect(find.text('Yaourt Test 500g'), findsOneWidget);
+    expect(find.text('Laitages'), findsOneWidget);
+
+    final state = Provider.of<AppState>(tester.element(find.text('Yaourt Test 500g')), listen: false);
+    final product = state.products.singleWhere((p) => p.name == 'Yaourt Test 500g');
+    expect(product.category, 'Laitages');
+    expect(product.supplierId, 'awaboissons');
+    expect(product.barcode, '6009900112233');
+    expect(product.priceSell, 500);
+    expect(product.priceBuy, 350);
+    expect(product.threshold, 10);
+    expect(product.location, 'Allée 5, Étagère A');
+    expect(product.weightKg, 0.5);
+    expect(product.unitsPerPack, 12);
+    expect(product.packPrice, 5500);
+    expect(product.unitsPerCarton, 6);
+    expect(product.cartonPrice, 31000);
+    expect(state.stockOf(product.id, 'cocody'), 25);
+    expect(state.stockOf(product.id, 'yopougon'), 0);
   });
 
   testWidgets('SupMag desktop: generate suggested purchase orders', (WidgetTester tester) async {
