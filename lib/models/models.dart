@@ -26,6 +26,14 @@ class Product {
   final double tva; // 0 or 0.18
   final bool vrac; // sold loose / by weight
   final int threshold; // low-stock threshold, store-agnostic default
+  final String supplierId; // '' if none
+  final String location; // free-text emplacement en magasin, '' if none
+  final double? weightKg;
+  final int? unitsPerPack;
+  final int? packPrice;
+  final int? unitsPerCarton;
+  final int? cartonPrice;
+  final String photoUrl; // Firebase Storage download URL, '' if none
 
   const Product({
     required this.id,
@@ -38,6 +46,14 @@ class Product {
     required this.tva,
     required this.vrac,
     required this.threshold,
+    this.supplierId = '',
+    this.location = '',
+    this.weightKg,
+    this.unitsPerPack,
+    this.packPrice,
+    this.unitsPerCarton,
+    this.cartonPrice,
+    this.photoUrl = '',
   });
 
   double get marginPct => priceBuy == 0 ? 0 : (priceSell - priceBuy) / priceBuy * 100;
@@ -53,6 +69,14 @@ class Product {
         tva: (m['tva'] as num).toDouble(),
         vrac: (m['vrac'] as int) == 1,
         threshold: m['threshold'] as int,
+        supplierId: m['supplier_id'] as String? ?? '',
+        location: m['location'] as String? ?? '',
+        weightKg: (m['weight_kg'] as num?)?.toDouble(),
+        unitsPerPack: m['units_per_pack'] as int?,
+        packPrice: m['pack_price'] as int?,
+        unitsPerCarton: m['units_per_carton'] as int?,
+        cartonPrice: m['carton_price'] as int?,
+        photoUrl: m['photo_url'] as String? ?? '',
       );
 
   Map<String, Object?> toMap() => {
@@ -66,6 +90,14 @@ class Product {
         'tva': tva,
         'vrac': vrac ? 1 : 0,
         'threshold': threshold,
+        'supplier_id': supplierId,
+        'location': location,
+        'weight_kg': weightKg,
+        'units_per_pack': unitsPerPack,
+        'pack_price': packPrice,
+        'units_per_carton': unitsPerCarton,
+        'carton_price': cartonPrice,
+        'photo_url': photoUrl,
       };
 }
 

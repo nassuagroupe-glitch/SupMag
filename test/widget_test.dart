@@ -29,6 +29,13 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// Dismisses the login gate via one of its "Travailler hors ligne" shortcuts,
+/// landing straight on the desktop/mobile shell like the rest of these tests
+/// expect.
+Future<void> _loginOffline(WidgetTester tester) async {
+  await _tap(tester, find.textContaining('Travailler hors ligne').first);
+}
+
 /// A realistic desktop window size — the default 800x600 test surface is
 /// narrower than the app's own "wide layout" breakpoints, which forces
 /// screens into their stacked/narrow variant and pushes secondary content
@@ -63,6 +70,7 @@ void main() {
     _useDesktopWindow(tester);
     await tester.pumpWidget(const SupMagApp());
     await tester.pumpAndSettle();
+    await _loginOffline(tester);
 
     expect(find.text('SupMag'), findsOneWidget);
     expect(find.text('Tableau de bord multi-magasins'), findsOneWidget);
@@ -89,6 +97,7 @@ void main() {
     _useDesktopWindow(tester);
     await tester.pumpWidget(const SupMagApp());
     await tester.pumpAndSettle();
+    await _loginOffline(tester);
 
     await _tap(tester, find.text('Caisse').first);
     expect(tester.takeException(), isNull);
@@ -114,6 +123,7 @@ void main() {
     _useDesktopWindow(tester);
     await tester.pumpWidget(const SupMagApp());
     await tester.pumpAndSettle();
+    await _loginOffline(tester);
 
     await _tap(tester, find.text('Transferts').first);
     expect(tester.takeException(), isNull);
@@ -126,10 +136,11 @@ void main() {
     _useDesktopWindow(tester);
     await tester.pumpWidget(const SupMagApp());
     await tester.pumpAndSettle();
+    await _loginOffline(tester);
 
     await _tap(tester, find.text('Produits & prix').first);
     await _tap(tester, find.text('Nouveau produit'));
-    expect(find.text('Nom'), findsOneWidget);
+    expect(find.text('Nom du produit'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await _tap(tester, find.text('Annuler'));
@@ -140,6 +151,7 @@ void main() {
     _useDesktopWindow(tester);
     await tester.pumpWidget(const SupMagApp());
     await tester.pumpAndSettle();
+    await _loginOffline(tester);
 
     await _tap(tester, find.text('Fournisseurs').first);
     await _tap(tester, find.text('Générer des bons de commande'));

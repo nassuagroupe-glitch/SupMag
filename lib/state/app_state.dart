@@ -461,13 +461,18 @@ class AppState extends ChangeNotifier {
 
   // ---- Products ----------------------------------------------------------
 
-  Future<void> addProduct(Product p) async {
-    await _db.createProduct(p);
+  List<String> get productCategories => {for (final p in products) p.category}.toList()..sort();
+
+  Future<void> addProduct(Product p, {String? initialStoreId, double initialStock = 0}) async {
+    await _db.createProduct(p, initialStoreId: initialStoreId, initialStock: initialStock);
     products = await _db.allProducts();
     _productsById = {for (final x in products) x.id: x};
     await refreshStock(notify: false);
     notifyListeners();
   }
+
+  Future<String> uploadProductPhoto(String productId, Uint8List bytes, {String extension = 'jpg'}) =>
+      _db.uploadProductPhoto(productId, bytes, extension: extension);
 
   Future<void> updateProductPrice(String id, {int? priceBuy, int? priceSell}) async {
     await _db.updateProductPrice(id, priceBuy: priceBuy, priceSell: priceSell);

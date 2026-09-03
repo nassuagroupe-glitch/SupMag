@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/models.dart';
 import 'seed.dart';
@@ -13,12 +16,16 @@ import 'seed.dart';
 /// Method names/signatures intentionally mirror the previous sqlite
 /// version so AppState didn't need to change when this replaced it.
 class FirestoreRepository {
-  FirestoreRepository({FirebaseFirestore? firestore}) : _fs = firestore ?? FirebaseFirestore.instance;
+  FirestoreRepository({FirebaseFirestore? firestore, FirebaseStorage? storage})
+      : _fs = firestore ?? FirebaseFirestore.instance,
+        _storage = storage;
 
   /// Swappable for tests: `FirestoreRepository.instance = FirestoreRepository(firestore: FakeFirebaseFirestore());`
   static FirestoreRepository instance = FirestoreRepository();
 
   final FirebaseFirestore _fs;
+  final FirebaseStorage? _storage;
+  FirebaseStorage get _storageOrDefault => _storage ?? FirebaseStorage.instance;
 
   CollectionReference<Map<String, dynamic>> get _stores => _fs.collection('stores');
   CollectionReference<Map<String, dynamic>> get _products => _fs.collection('products');
@@ -144,14 +151,22 @@ class FirestoreRepository {
     return doc.exists ? Product.fromMap(doc.data()!) : null;
   }
 
-  Future<void> createProduct(Product p) async {
+  Future<void> createProduct(Product p, {String? initialStoreId, double initialStock = 0}) async {
     await _products.doc(p.id).set(p.toMap());
     final storeList = await allStores();
     final batch = _fs.batch();
     for (final s in storeList) {
-      batch.set(_stock.doc(_stockId(s.id, p.id)), StockLevel(storeId: s.id, productId: p.id, qty: 0).toMap());
+      final qty = s.id == initialStoreId ? initialStock : 0.0;
+      batch.set(_stock.doc(_stockId(s.id, p.id)), StockLevel(storeId: s.id, productId: p.id, qty: qty).toMap());
     }
     await batch.commit();
+  }
+
+  /// Uploads a product photo to Firebase Storage and returns its download URL.
+  Future<String> uploadProductPhoto(String productId, Uint8List bytes, {String extension = 'jpg'}) async {
+    final ref = _storageOrDefault.ref('product_photos/$productId.$extension');
+    await ref.putData(bytes, SettableMetadata(contentType: 'image/$extension'));
+    return ref.getDownloadURL();
   }
 
   Future<void> updateProductPrice(String id, {int? priceBuy, int? priceSell}) async {

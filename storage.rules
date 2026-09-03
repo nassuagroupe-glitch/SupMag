@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // SupMag n'a pas encore de couche d'authentification (pas de firebase_auth
+    // dans l'app) : l'accès est donc ouvert, comme pour Firestore (voir
+    // firestore.rules). À restreindre dès qu'une authentification est ajoutée.
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -216,18 +216,20 @@ class _SidebarState extends State<_Sidebar> {
           const SizedBox(height: 8),
           _ScrollArrow(icon: Icons.keyboard_arrow_up, onTap: () => _scrollBy(-180)),
           Expanded(
-            child: ListView(
+            child: SingleChildScrollView(
               controller: _navScroll,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                for (final item in _desktopNav)
-                  _NavButton(
-                    item: item,
-                    active: state.desktopScreen == item.id,
-                    badge: _badgeFor(item.id),
-                    onTap: () => state.setDesktopScreen(item.id),
-                  ),
-              ],
+              child: Column(
+                children: [
+                  for (final item in _desktopNav)
+                    _NavButton(
+                      item: item,
+                      active: state.desktopScreen == item.id,
+                      badge: _badgeFor(item.id),
+                      onTap: () => state.setDesktopScreen(item.id),
+                    ),
+                ],
+              ),
             ),
           ),
           _ScrollArrow(icon: Icons.keyboard_arrow_down, onTap: () => _scrollBy(180)),
