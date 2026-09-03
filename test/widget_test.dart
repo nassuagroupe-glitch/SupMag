@@ -66,6 +66,34 @@ Future<AppState> _pumpMobileShell(WidgetTester tester) async {
 void main() {
   setUp(_resetBackend);
 
+  testWidgets('SupMag desktop: login via role, user, and PIN', (WidgetTester tester) async {
+    _useDesktopWindow(tester);
+    await tester.pumpWidget(const SupMagApp());
+    await tester.pumpAndSettle();
+
+    // Login gate first, not the dashboard straight away.
+    expect(find.text('SE CONNECTER EN TANT QUE'), findsOneWidget);
+    expect(find.text('Tableau de bord multi-magasins'), findsNothing);
+
+    await _tap(tester, find.text('Gérant'));
+    expect(find.text('Awa Traoré'), findsOneWidget);
+    await _tap(tester, find.text('Awa Traoré'));
+
+    // A wrong PIN shows an error and doesn't log in.
+    for (final digit in '0000'.split('')) {
+      await _tap(tester, find.text(digit).first);
+    }
+    expect(find.text('Code PIN incorrect'), findsOneWidget);
+    expect(find.text('Tableau de bord multi-magasins'), findsNothing);
+
+    // The correct PIN (seed pin for Awa Traoré) logs in.
+    for (final digit in '2575'.split('')) {
+      await _tap(tester, find.text(digit).first);
+    }
+    expect(find.text('Tableau de bord multi-magasins'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('SupMag desktop: boots and every nav screen renders without error', (WidgetTester tester) async {
     _useDesktopWindow(tester);
     await tester.pumpWidget(const SupMagApp());
