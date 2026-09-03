@@ -1,8 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -135,21 +132,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
     String? selectedCategory = categories.isNotEmpty ? categories.first : _newCategorySentinel;
     String? selectedSupplierId;
     var selectedStoreId = state.stores.any((s) => s.id == state.currentStoreId) ? state.currentStoreId : state.stores.first.id;
-    Uint8List? photoBytes;
-    String photoExt = 'jpg';
-    String? photoName;
-
-    Future<void> pickPhoto(StateSetter setDialogState) async {
-      final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1024, imageQuality: 85);
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      final dotIndex = file.name.lastIndexOf('.');
-      setDialogState(() {
-        photoBytes = bytes;
-        photoExt = dotIndex == -1 ? 'jpg' : file.name.substring(dotIndex + 1).toLowerCase();
-        photoName = file.name;
-      });
-    }
+    // Photo produit désactivée pour l'instant : Firebase Storage n'est pas
+    // encore activé sur le projet (compte de facturation Google Cloud
+    // requis). Le champ photoUrl reste dans le modèle/repository, prêt à
+    // être branché ici une fois Storage disponible.
 
     Future<void> scanBarcode(BuildContext context, StateSetter setDialogState) async {
       if (defaultTargetPlatform != TargetPlatform.android) {
@@ -220,20 +206,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                      OutlinedButton.icon(
-                        onPressed: () => pickPhoto(setDialogState),
-                        icon: const Icon(Icons.image_outlined, size: 18),
-                        label: const Text('Choisir un fichier'),
+                      Tooltip(
+                        message: "Bientôt disponible — l'hébergement des photos (Firebase Storage) n'est pas encore activé sur le projet.",
+                        child: OutlinedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.image_outlined, size: 18),
+                          label: const Text('Choisir un fichier'),
+                        ),
                       ),
                       const SizedBox(width: 10),
-                      if (photoBytes != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.memory(photoBytes!, width: 32, height: 32, fit: BoxFit.cover),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(child: Text(photoName ?? 'Aucun fichier choisi', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: AppColors.neutral700))),
+                      const Expanded(
+                        child: Text('Bientôt disponible', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: AppColors.neutral600)),
+                      ),
                     ]),
                     const SizedBox(height: 12),
                     Row(children: [
@@ -336,16 +320,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
               onPressed: () async {
                 if (!(formKey.currentState?.validate() ?? false)) return;
                 final id = 'p${DateTime.now().microsecondsSinceEpoch}';
-                var photoUrl = '';
-                if (photoBytes != null) {
-                  try {
-                    photoUrl = await state.uploadProductPhoto(id, photoBytes!, extension: photoExt);
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Échec de l'envoi de la photo : $e")));
-                    }
-                  }
-                }
                 final category = selectedCategory == _newCategorySentinel ? newCategory.text.trim() : (selectedCategory ?? '');
                 final p = Product(
                   id: id,
@@ -365,7 +339,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   packPrice: int.tryParse(packPrice.text),
                   unitsPerCarton: int.tryParse(unitsPerCarton.text),
                   cartonPrice: int.tryParse(cartonPrice.text),
-                  photoUrl: photoUrl,
                 );
                 await state.addProduct(p, initialStoreId: selectedStoreId, initialStock: double.tryParse(initialStock.text) ?? 0);
                 if (context.mounted) Navigator.pop(context);
