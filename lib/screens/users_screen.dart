@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/models.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ui.dart';
@@ -15,6 +16,7 @@ class UsersScreen extends StatefulWidget {
 
 class _UsersScreenState extends State<UsersScreen> {
   String query = '';
+  final Set<String> _revealedPins = {};
 
   TagVariant _statusVariant(String s) => switch (s) {
         'Actif' || 'En caisse' => TagVariant.accent,
@@ -62,6 +64,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       DataColumn(label: Text('Appareil')),
                       DataColumn(label: Text('Dernière activité')),
                       DataColumn(label: Text('Statut')),
+                      DataColumn(label: Text('Code PIN')),
                     ],
                     rows: [
                       for (final u in users)
@@ -72,6 +75,14 @@ class _UsersScreenState extends State<UsersScreen> {
                           DataCell(Text(u.device)),
                           DataCell(Text(_relative(u.lastActive))),
                           DataCell(StatusTag(u.status, variant: _statusVariant(u.status))),
+                          DataCell(_PinCell(
+                            user: u,
+                            revealed: _revealedPins.contains(u.id),
+                            onToggleReveal: () => setState(() {
+                              _revealedPins.contains(u.id) ? _revealedPins.remove(u.id) : _revealedPins.add(u.id);
+                            }),
+                            onEdit: () => _openPinDialog(context, state, u),
+                          )),
                         ]),
                     ],
                   ),
@@ -153,14 +164,100 @@ class _UsersScreenState extends State<UsersScreen> {
             FilledButton(
               onPressed: () async {
                 if (name.text.trim().isEmpty) return;
-                await state.inviteUser(name: name.text.trim(), role: role, storeId: allStores ? null : storeId, device: device);
+                final created = await state.inviteUser(name: name.text.trim(), role: role, storeId: allStores ? null : storeId, device: device);
                 if (context.mounted) Navigator.pop(context);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${created.name} — code PIN attribué : ${created.pin}')),
+                  );
+                }
               },
               child: const Text('Envoyer l\'invitation'),
             ),
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _openPinDialog(BuildContext context, AppState state, UserAccount user) async {
+    final controller = TextEditingController(text: user.pin);
+    String? error;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          title: Text('Code PIN — ${user.name}'),
+          content: SizedBox(
+            width: 260,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  decoration: InputDecoration(labelText: 'Nouveau code (4 chiffres)', errorText: error, counterText: ''),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+            FilledButton(
+              onPressed: () async {
+                final pin = controller.text.trim();
+                if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
+                  setDialogState(() => error = 'Le code doit contenir exactement 4 chiffres');
+                  return;
+                }
+                await state.setUserPin(user.id, pin);
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Enregistrer'),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class _PinCell extends StatelessWidget {
+  const _PinCell({required this.user, required this.revealed, required this.onToggleReveal, required this.onEdit});
+  final UserAccount user;
+  final bool revealed;
+  final VoidCallback onToggleReveal;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 46,
+          child: Text(
+            revealed ? user.pin : '••••',
+            style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()], fontWeight: FontWeight.w600),
+          ),
+        ),
+        IconButton(
+          icon: Icon(revealed ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 16),
+          onPressed: onToggleReveal,
+          tooltip: revealed ? 'Masquer' : 'Afficher',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        ),
+        IconButton(
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          onPressed: onEdit,
+          tooltip: 'Modifier le code',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        ),
+      ],
     );
   }
 }

@@ -389,6 +389,7 @@ class UserAccount {
   final String device;
   final DateTime lastActive;
   final String status; // Actif, En caisse, Hors ligne, Inactif
+  final String pin; // 4 chiffres, saisi à la connexion
 
   const UserAccount({
     required this.id,
@@ -398,6 +399,7 @@ class UserAccount {
     required this.device,
     required this.lastActive,
     required this.status,
+    this.pin = '0000',
   });
 
   factory UserAccount.fromMap(Map<String, Object?> m) => UserAccount(
@@ -408,6 +410,7 @@ class UserAccount {
         device: m['device'] as String,
         lastActive: DateTime.parse(m['last_active'] as String),
         status: m['status'] as String,
+        pin: m['pin'] as String? ?? '0000',
       );
 
   Map<String, Object?> toMap() => {
@@ -418,6 +421,7 @@ class UserAccount {
         'device': device,
         'last_active': lastActive.toIso8601String(),
         'status': status,
+        'pin': pin,
       };
 }
 
@@ -450,5 +454,41 @@ class CreditAccount {
         'store_id': storeId,
         'balance': balance,
         'ceiling': ceiling,
+      };
+}
+
+class Expense {
+  final String id;
+  final String storeId;
+  final String label;
+  final String category; // Loyer, Électricité, Transport, Salaires, Entretien, Autre
+  final int amount;
+  final DateTime date;
+
+  const Expense({
+    required this.id,
+    required this.storeId,
+    required this.label,
+    required this.category,
+    required this.amount,
+    required this.date,
+  });
+
+  factory Expense.fromMap(Map<String, Object?> m) => Expense(
+        id: m['id'] as String,
+        storeId: m['store_id'] as String,
+        label: m['label'] as String,
+        category: m['category'] as String,
+        amount: m['amount'] as int,
+        date: DateTime.parse(m['date'] as String),
+      );
+
+  Map<String, Object?> toMap() => {
+        'id': id,
+        'store_id': storeId,
+        'label': label,
+        'category': category,
+        'amount': amount,
+        'date': date.toIso8601String(),
       };
 }

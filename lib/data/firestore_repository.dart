@@ -30,6 +30,7 @@ class FirestoreRepository {
   CollectionReference<Map<String, dynamic>> get _receptions => _fs.collection('receptions');
   CollectionReference<Map<String, dynamic>> get _users => _fs.collection('users');
   CollectionReference<Map<String, dynamic>> get _creditAccounts => _fs.collection('credit_accounts');
+  CollectionReference<Map<String, dynamic>> get _expenses => _fs.collection('expenses');
   DocumentReference<Map<String, dynamic>> get _ticketCounter => _fs.collection('counters').doc('tickets');
 
   String _stockId(String storeId, String productId) => '${storeId}_$productId';
@@ -42,6 +43,24 @@ class FirestoreRepository {
     final existing = await _stores.limit(1).get();
     if (existing.docs.isNotEmpty) return;
     await _seed();
+  }
+
+  /// Backfills the `pin` field on the seed users that don't have one yet.
+  /// Runs on every launch (not gated like [ensureSeeded]) so accounts
+  /// created before PIN login existed pick one up without a full reseed —
+  /// but never overwrites a pin an admin already changed from the Users
+  /// screen, so it only ever touches docs missing the field entirely.
+  Future<void> ensureUserPins() async {
+    final existing = await _users.get();
+    final missingPin = {for (final d in existing.docs) if (!d.data().containsKey('pin')) d.id};
+    if (missingPin.isEmpty) return;
+    final batch = _fs.batch();
+    for (final u in seedUsers) {
+      if (missingPin.contains(u.id)) {
+        batch.set(_users.doc(u.id), {'pin': u.pin}, SetOptions(merge: true));
+      }
+    }
+    await batch.commit();
   }
 
   Future<void> _commitInChunks(List<(CollectionReference<Map<String, dynamic>>, String, Map<String, Object?>)> writes) async {
@@ -82,6 +101,9 @@ class FirestoreRepository {
     }
     for (final c in creditAccounts) {
       writes.add((_creditAccounts, c.id, c.toMap()));
+    }
+    for (final e in seedExpenses) {
+      writes.add((_expenses, e.id, e.toMap()));
     }
     await _commitInChunks(writes);
 
@@ -383,6 +405,10 @@ class FirestoreRepository {
     await _users.doc(u.id).set(u.toMap());
   }
 
+  Future<void> setUserPin(String userId, String pin) async {
+    await _users.doc(userId).update({'pin': pin});
+  }
+
   // ---- Credit accounts ------------------------------------------------------
 
   Future<List<CreditAccount>> creditAccountsForStore(String storeId) async {
@@ -393,5 +419,24 @@ class FirestoreRepository {
   Future<List<CreditAccount>> allCreditAccounts() async {
     final snap = await _creditAccounts.get();
     return snap.docs.map((d) => CreditAccount.fromMap(d.data())).toList();
+  }
+
+  Future<void> addCreditAccount(CreditAccount c) async {
+    await _creditAccounts.doc(c.id).set(c.toMap());
+  }
+
+  Future<void> setCreditBalance(String id, int balance) async {
+    await _creditAccounts.doc(id).update({'balance': balance});
+  }
+
+  // ---- Expenses ---------------------------------------------------------
+
+  Future<List<Expense>> allExpenses() async {
+    final snap = await _expenses.get();
+    return snap.docs.map((d) => Expense.fromMap(d.data())).toList();
+  }
+
+  Future<void> addExpense(Expense e) async {
+    await _expenses.doc(e.id).set(e.toMap());
   }
 }

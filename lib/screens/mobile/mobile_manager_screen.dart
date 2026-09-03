@@ -45,6 +45,12 @@ class MobileManagerScreen extends StatelessWidget {
                 items: [for (final s in state.stores) DropdownMenuItem(value: s.id, child: Text(s.name.split(' ').first))],
                 onChanged: (v) => v == null ? null : state.setStore(v),
               ),
+              IconButton(
+                onPressed: state.logout,
+                icon: const Icon(Icons.logout, size: 18),
+                tooltip: 'Déconnexion',
+                color: AppColors.neutral600,
+              ),
             ],
           ),
           const SizedBox(height: 18),

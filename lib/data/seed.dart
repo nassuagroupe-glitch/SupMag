@@ -101,19 +101,27 @@ final seedReceptions = (
 );
 
 final seedUsers = <UserAccount>[
-  UserAccount(id: 'u1', name: 'Kouassi Aboa', role: 'Direction', storeId: null, device: 'Windows', lastActive: DateTime(2026, 9, 2, 11, 40), status: 'Actif'),
-  UserAccount(id: 'u2', name: 'Awa Traoré', role: 'Gérante', storeId: 'cocody', device: 'Windows', lastActive: DateTime(2026, 9, 2, 11, 36), status: 'Actif'),
-  UserAccount(id: 'u3', name: 'Ismaël Bakayoko', role: 'Gérant', storeId: 'abobo', device: 'Android', lastActive: DateTime(2026, 9, 2, 11, 21), status: 'Hors ligne'),
-  UserAccount(id: 'u4', name: 'Fatou Coulibaly', role: 'Caissière', storeId: 'yopougon', device: 'Windows · poste 03', lastActive: DateTime(2026, 9, 2, 11, 41), status: 'En caisse'),
-  UserAccount(id: 'u5', name: 'Serge Gbagbo', role: 'Magasinier', storeId: 'adjame', device: 'Android · douchette', lastActive: DateTime(2026, 9, 2, 11, 38), status: 'Actif'),
-  UserAccount(id: 'u6', name: 'Marie Kone', role: 'Caissière', storeId: 'bouake', device: 'Android', lastActive: DateTime(2026, 9, 1, 19, 40), status: 'Inactif'),
-  UserAccount(id: 'u7', name: 'Ali Ouattara', role: 'Comptable', storeId: null, device: 'Windows', lastActive: DateTime(2026, 9, 2, 10, 54), status: 'Actif'),
+  UserAccount(id: 'u1', name: 'Kouassi Aboa', role: 'Direction', storeId: null, device: 'Windows', lastActive: DateTime(2026, 9, 2, 11, 40), status: 'Actif', pin: '5031'),
+  UserAccount(id: 'u2', name: 'Awa Traoré', role: 'Gérante', storeId: 'cocody', device: 'Windows', lastActive: DateTime(2026, 9, 2, 11, 36), status: 'Actif', pin: '2575'),
+  UserAccount(id: 'u3', name: 'Ismaël Bakayoko', role: 'Gérant', storeId: 'abobo', device: 'Android', lastActive: DateTime(2026, 9, 2, 11, 21), status: 'Hors ligne', pin: '1292'),
+  UserAccount(id: 'u4', name: 'Fatou Coulibaly', role: 'Caissière', storeId: 'yopougon', device: 'Windows · poste 03', lastActive: DateTime(2026, 9, 2, 11, 41), status: 'En caisse', pin: '1055'),
+  UserAccount(id: 'u5', name: 'Serge Gbagbo', role: 'Magasinier', storeId: 'adjame', device: 'Android · douchette', lastActive: DateTime(2026, 9, 2, 11, 38), status: 'Actif', pin: '5347'),
+  UserAccount(id: 'u6', name: 'Marie Kone', role: 'Caissière', storeId: 'bouake', device: 'Android', lastActive: DateTime(2026, 9, 1, 19, 40), status: 'Inactif', pin: '7878'),
+  UserAccount(id: 'u7', name: 'Ali Ouattara', role: 'Comptable', storeId: null, device: 'Windows', lastActive: DateTime(2026, 9, 2, 10, 54), status: 'Actif', pin: '8884'),
 ];
 
 const creditAccounts = <CreditAccount>[
   CreditAccount(id: 'c1', customerName: 'Mme Kouadio', storeId: 'yopougon', balance: 12400, ceiling: 25000),
   CreditAccount(id: 'c2', customerName: 'M. Diabaté', storeId: 'cocody', balance: 8600, ceiling: 20000),
   CreditAccount(id: 'c3', customerName: 'Mme Yao', storeId: 'adjame', balance: 21000, ceiling: 25000),
+];
+
+final seedExpenses = <Expense>[
+  Expense(id: 'e1', storeId: 'yopougon', label: 'Loyer septembre', category: 'Loyer', amount: 450000, date: DateTime(2026, 9, 1)),
+  Expense(id: 'e2', storeId: 'cocody', label: 'Facture CIE', category: 'Électricité', amount: 68000, date: DateTime(2026, 9, 1)),
+  Expense(id: 'e3', storeId: 'yopougon', label: 'Carburant livraison', category: 'Transport', amount: 25000, date: DateTime(2026, 9, 2)),
+  Expense(id: 'e4', storeId: 'abobo', label: 'Réparation vitrine', category: 'Entretien', amount: 40000, date: DateTime(2026, 8, 30)),
+  Expense(id: 'e5', storeId: 'adjame', label: 'Fournitures bureau', category: 'Autre', amount: 15500, date: DateTime(2026, 9, 2)),
 ];
 
 /// Relative daily activity weight per store, taken from the "CA jour" column

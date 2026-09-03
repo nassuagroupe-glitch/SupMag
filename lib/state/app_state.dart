@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,6 +27,24 @@ class AppState extends ChangeNotifier {
   final LocalSettings _local = LocalSettings.instance;
   bool ready = false;
 
+  // ---- Session (login screen) ----------------------------------------------
+
+  UserAccount? currentUser;
+  bool get authenticated => currentUser != null;
+
+  bool verifyPin(UserAccount user, String pin) => pin == user.pin;
+
+  void loginAs(UserAccount user, {bool markOffline = false}) {
+    currentUser = user;
+    if (markOffline) offline = true;
+    notifyListeners();
+  }
+
+  void logout() {
+    currentUser = null;
+    notifyListeners();
+  }
+
   List<Store> stores = [];
   List<Product> products = [];
   List<Supplier> suppliers = [];
@@ -34,6 +54,7 @@ class AppState extends ChangeNotifier {
   List<ReceptionLine> currentReceptionLines = [];
   List<UserAccount> users = [];
   List<CreditAccount> creditAccounts = [];
+  List<Expense> expenses = [];
   Map<String, Map<String, double>> stockMatrix = {}; // productId -> storeId -> qty
   Map<String, double> unitsSoldByProduct = {}; // last 30 days
   Map<String, double> unitsSoldByProduct7d = {}; // last 7 days, for "Top produits"
@@ -72,6 +93,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     await _db.ensureSeeded();
+    await _db.ensureUserPins();
     stores = await _db.allStores();
     products = await _db.allProducts();
     suppliers = await _db.allSuppliers();
@@ -92,6 +114,7 @@ class AppState extends ChangeNotifier {
       refreshPurchaseOrders(notify: false),
       refreshUsers(notify: false),
       refreshCreditAccounts(notify: false),
+      refreshExpenses(notify: false),
       refreshSales(notify: false),
       _loadReception(),
     ]);
@@ -130,6 +153,34 @@ class AppState extends ChangeNotifier {
   Future<void> refreshCreditAccounts({bool notify = true}) async {
     creditAccounts = await _db.allCreditAccounts();
     if (notify) notifyListeners();
+  }
+
+  Future<void> refreshExpenses({bool notify = true}) async {
+    expenses = await _db.allExpenses();
+    if (notify) notifyListeners();
+  }
+
+  Future<void> addExpense({required String storeId, required String label, required String category, required int amount}) async {
+    final e = Expense(id: _uuid.v4(), storeId: storeId, label: label, category: category, amount: amount, date: DateTime.now());
+    await _db.addExpense(e);
+    await refreshExpenses(notify: false);
+    notifyListeners();
+  }
+
+  Future<void> addClient({required String name, required String storeId, int ceiling = 25000}) async {
+    final c = CreditAccount(id: _uuid.v4(), customerName: name, storeId: storeId, balance: 0, ceiling: ceiling);
+    await _db.addCreditAccount(c);
+    await refreshCreditAccounts(notify: false);
+    notifyListeners();
+  }
+
+  Future<void> recordCreditPayment(String creditAccountId, int amount) async {
+    final i = creditAccounts.indexWhere((c) => c.id == creditAccountId);
+    if (i == -1) return;
+    final newBalance = (creditAccounts[i].balance - amount).clamp(0, 1 << 30);
+    await _db.setCreditBalance(creditAccountId, newBalance);
+    creditAccounts[i] = CreditAccount(id: creditAccounts[i].id, customerName: creditAccounts[i].customerName, storeId: creditAccounts[i].storeId, balance: newBalance, ceiling: creditAccounts[i].ceiling);
+    notifyListeners();
   }
 
   Future<void> refreshSales({bool notify = true}) async {
@@ -427,7 +478,7 @@ class AppState extends ChangeNotifier {
 
   // ---- Users -----------------------------------------------------------
 
-  Future<void> inviteUser({required String name, required String role, String? storeId, required String device}) async {
+  Future<UserAccount> inviteUser({required String name, required String role, String? storeId, required String device}) async {
     final u = UserAccount(
       id: _uuid.v4(),
       name: name,
@@ -436,9 +487,22 @@ class AppState extends ChangeNotifier {
       device: device,
       lastActive: DateTime.now(),
       status: 'Invité',
+      pin: (1000 + Random().nextInt(9000)).toString(),
     );
     await _db.addUser(u);
     await refreshUsers(notify: false);
     notifyListeners();
+    return u;
+  }
+
+  Future<void> setUserPin(String userId, String pin) async {
+    await _db.setUserPin(userId, pin);
+    final i = users.indexWhere((u) => u.id == userId);
+    if (i != -1) {
+      final u = users[i];
+      users[i] = UserAccount(id: u.id, name: u.name, role: u.role, storeId: u.storeId, device: u.device, lastActive: u.lastActive, status: u.status, pin: pin);
+      if (currentUser?.id == userId) currentUser = users[i];
+      notifyListeners();
+    }
   }
 }
